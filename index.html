@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AHS60 — Care Simulation</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f3;--bg3:#eeecea;
+  --text:#1a1a1a;--text2:#555;--text3:#888;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.22);
+  --green:#1D9E75;--green-lt:#E1F5EE;--green-dk:#085041;--green-mid:#0F6E56;
+  --coral:#D85A30;--coral-lt:#FAECE7;--coral-dk:#4A1B0C;
+  --amber:#BA7517;--amber-lt:#FAEEDA;
+  --r-md:8px;--r-lg:12px;--font:system-ui,sans-serif;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+  --text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.22);
+  --green-lt:#04342C;--green-dk:#9FE1CB;
+  --coral-lt:#4A1B0C;--coral-dk:#F5C4B3;--amber-lt:#412402;
+}}
+html{font-family:var(--font);background:var(--bg);color:var(--text);font-size:16px;line-height:1.6}
+body{min-height:100vh;padding:1.5rem 1rem 3rem}
+#game{max-width:680px;margin:0 auto}
+.screen{display:none}.screen.active{display:block}
+
+/* REGISTER */
+.reg-header{margin-bottom:1.5rem}
+.reg-header h1{font-size:20px;font-weight:500;margin-bottom:4px}
+.reg-header p{font-size:13px;color:var(--text2);line-height:1.6}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em}
+.field input,.field select{width:100%;padding:10px 12px;border:0.5px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:14px;font-family:var(--font);outline:none}
+.field input:focus,.field select:focus{border-color:var(--green)}
+.start-btn{width:100%;padding:11px;border:none;border-radius:var(--r-md);background:var(--green);color:#fff;font-size:14px;font-weight:500;cursor:pointer;margin-top:0.25rem;font-family:var(--font)}
+.start-btn:hover{background:var(--green-mid)}
+.err-msg{font-size:12px;color:var(--coral);margin-top:0.5rem;display:none}
+.err-msg.show{display:block}
+
+/* HOME */
+.home-header{margin-bottom:1rem}
+.home-header h2{font-size:18px;font-weight:500;margin-bottom:3px}
+.home-header p{font-size:13px;color:var(--text2)}
+.student-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border-radius:99px;padding:5px 12px;font-size:12px;color:var(--text2);margin-bottom:1rem}
+.student-chip strong{color:var(--text);font-weight:500}
+.level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:0.75rem}
+.level-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1rem;cursor:pointer;transition:border-color 0.12s}
+.level-card:hover:not(.locked){border-color:var(--border2);background:var(--bg2)}
+.level-card.locked{opacity:0.4;cursor:not-allowed}
+.level-card.completed{border-color:var(--green)}
+.level-num{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px}
+.level-name{font-size:14px;font-weight:500;margin-bottom:2px}
+.level-sub{font-size:12px;color:var(--text2)}
+.star-row{font-size:12px;margin-top:6px;color:var(--amber)}
+.level-cta{margin-top:6px;font-size:12px;color:var(--green-mid)}
+.pc-legend{font-size:11px;color:var(--text3);padding:0.75rem 0;border-top:0.5px solid var(--border)}
+
+/* SIM */
+.sim-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:0.875rem}
+.sim-meta h2{font-size:15px;font-weight:500;margin-bottom:1px}
+.sim-meta p{font-size:12px;color:var(--text2)}
+.prog-wrap{height:4px;background:var(--bg3);border-radius:99px;margin-top:6px;width:180px;overflow:hidden}
+.prog-fill{height:100%;background:var(--green);border-radius:99px;transition:width 0.3s}
+.quit-btn{background:none;border:0.5px solid var(--border);border-radius:var(--r-md);padding:4px 10px;font-size:12px;color:var(--text2);cursor:pointer}
+.quit-btn:hover{background:var(--bg2)}
+.pc-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:0.875rem}
+.pc-card{background:var(--bg2);border-radius:var(--r-md);padding:8px 10px;text-align:center}
+.pc-lbl{font-size:10px;color:var(--text3);margin-bottom:2px}
+.pc-val{font-size:20px;font-weight:500}
+.pc-mx{font-size:10px;color:var(--text3)}
+.scenario-box{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1rem 1.2rem;margin-bottom:0.875rem}
+.step-lbl{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px}
+.client-banner{background:var(--bg2);border-radius:var(--r-md);padding:6px 10px;margin-bottom:10px;font-size:12px;color:var(--text2);line-height:1.5}
+.scenario-text{font-size:14px;line-height:1.65}
+.options{display:flex;flex-direction:column;gap:7px;margin-bottom:0.875rem}
+.opt-btn{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r-md);padding:0.65rem 1rem;font-size:13px;color:var(--text);cursor:pointer;text-align:left;line-height:1.55;font-family:var(--font);transition:border-color 0.1s}
+.opt-btn:hover:not(:disabled){border-color:var(--border2);background:var(--bg2)}
+.opt-btn.correct{border-color:var(--green);background:var(--green-lt);color:var(--green-dk)}
+.opt-btn.wrong{border-color:var(--coral);background:var(--coral-lt);color:var(--coral-dk)}
+.opt-btn.missed{border-color:var(--green);background:var(--green-lt);color:var(--green-dk);opacity:0.5}
+.opt-btn:disabled{cursor:not-allowed}
+.fb-box{border-radius:var(--r-md);padding:0.75rem 1rem;font-size:13px;line-height:1.6;display:none}
+.fb-box.show{display:block}
+.fb-box.good{background:var(--green-lt);color:var(--green-dk)}
+.fb-box.bad{background:var(--coral-lt);color:var(--coral-dk)}
+.fb-pc{font-size:11px;font-weight:500;margin-top:4px;opacity:0.75}
+.next-btn{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r-md);padding:0.55rem 1.25rem;font-size:13px;color:var(--text);cursor:pointer;display:none;font-family:var(--font);margin-top:0.875rem}
+.next-btn.show{display:inline-block}
+.next-btn:hover{background:var(--bg2)}
+
+/* RESULT */
+.res-h h2{font-size:20px;font-weight:500;margin-bottom:2px}
+.star-big{font-size:28px;margin:0.5rem 0;letter-spacing:3px;color:var(--amber)}
+.res-msg{font-size:13px;color:var(--text2);margin-bottom:1rem;line-height:1.6}
+.result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem}
+.rpc{background:var(--bg2);border-radius:var(--r-md);padding:0.9rem;text-align:center}
+.rpc-lbl{font-size:10px;color:var(--text3);margin-bottom:3px}
+.rpc-val{font-size:26px;font-weight:500}
+.rpc-max{font-size:11px;color:var(--text3)}
+.rpc.full .rpc-val{color:var(--green)}
+.rpc.partial .rpc-val{color:var(--amber)}
+.rpc.poor .rpc-val{color:var(--coral)}
+.divider{height:0.5px;background:var(--border);margin:1rem 0}
+.action-row{display:flex;gap:8px;flex-wrap:wrap}
+.act-btn{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r-md);padding:0.55rem 1rem;font-size:13px;color:var(--text);cursor:pointer;flex:1;font-family:var(--font)}
+.act-btn:hover{background:var(--bg2)}
+.act-btn.primary{border-color:var(--green);color:var(--green-mid)}
+.act-btn.primary:hover{background:var(--green-lt)}
+.save-status{font-size:12px;color:var(--text3);margin-top:0.75rem;min-height:18px}
+.save-status.ok{color:var(--green)}
+.save-status.err{color:var(--coral)}
+</style>
+</head>
+<body>
+<div id="game">
+
+<!-- REGISTER -->
+<div id="screen-reg" class="screen active">
+  <div class="reg-header">
+    <h1>AHS60 — Care Simulation</h1>
+    <p>Enter your details before you start. Your scores will be saved automatically after each case.</p>
+  </div>
+  <div class="field">
+    <label>Full name</label>
+    <input type="text" id="inp-name" placeholder="e.g. Sara Al Mansoori" autocomplete="off">
+  </div>
+  <div class="field">
+    <label>Class</label>
+    <select id="inp-class">
+      <option value="">— select your class —</option>
+      <option>11 AHS</option>
+      <option>11 ENI/AHS</option>
+      <option>11 AHC</option>
+      <option>Other</option>
+    </select>
+  </div>
+  <button class="start-btn" onclick="register()">Start →</button>
+  <div class="err-msg" id="reg-err">Please enter your name and select your class.</div>
+</div>
+
+<!-- HOME -->
+<div id="screen-home" class="screen">
+  <div class="home-header">
+    <h2>Choose a case</h2>
+    <p>Complete Case 1 to unlock Case 2, then Case 3.</p>
+  </div>
+  <div class="student-chip">Playing as <strong id="chip-name"></strong> · <strong id="chip-class"></strong></div>
+  <div class="level-grid" id="level-grid"></div>
+  <div class="pc-legend">PC2.1 = follow the care plan &nbsp;·&nbsp; PC2.2 = infection control &nbsp;·&nbsp; PC2.3 = client comfort &nbsp;·&nbsp; PC2.4 = know your limits</div>
+</div>
+
+<!-- SIM -->
+<div id="screen-sim" class="screen">
+  <div class="sim-header">
+    <div class="sim-meta">
+      <h2 id="sim-title"></h2>
+      <p id="sim-sub"></p>
+      <div class="prog-wrap"><div class="prog-fill" id="prog-fill"></div></div>
+    </div>
+    <button class="quit-btn" onclick="goHome()">Quit</button>
+  </div>
+  <div class="pc-scores">
+    <div class="pc-card"><div class="pc-lbl">PC2.1</div><div class="pc-val" id="s21">0</div><div class="pc-mx">/ <span id="m21">0</span></div></div>
+    <div class="pc-card"><div class="pc-lbl">PC2.2</div><div class="pc-val" id="s22">0</div><div class="pc-mx">/ <span id="m22">0</span></div></div>
+    <div class="pc-card"><div class="pc-lbl">PC2.3</div><div class="pc-val" id="s23">0</div><div class="pc-mx">/ <span id="m23">0</span></div></div>
+    <div class="pc-card"><div class="pc-lbl">PC2.4</div><div class="pc-val" id="s24">0</div><div class="pc-mx">/ <span id="m24">0</span></div></div>
+  </div>
+  <div class="scenario-box">
+    <div class="step-lbl" id="step-lbl"></div>
+    <div class="client-banner" id="client-banner"></div>
+    <div class="scenario-text" id="scenario-text"></div>
+  </div>
+  <div class="options" id="options"></div>
+  <div class="fb-box" id="fb-box"></div>
+  <button class="next-btn" id="next-btn" onclick="nextStep()">Continue</button>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="res-h"><h2 id="res-title"></h2></div>
+  <div class="star-big" id="star-big"></div>
+  <p class="res-msg" id="res-msg"></p>
+  <div class="result-grid" id="result-grid"></div>
+  <div class="divider"></div>
+  <div class="action-row" id="action-row"></div>
+  <div class="save-status" id="save-status"></div>
+</div>
+
+</div>
+<script>
+/* ── CONFIG ── paste your deployed Apps Script URL below ── */
+const SHEET_URL='https://script.google.com/macros/s/AKfycbybBm4-v23JFrmUaWsUfJZOLaJsH2X3poVh1-nT_ArzfAb8GHfaEV9PcWX_W-nv1U1PQg/exec';
+
+/* ── CASE DATA ─────────────────────────────────────────── */
+const CASES=[{id:0,name:"Ms Bashayer",label:"Case 1",sub:"Post-knee replacement",banner:"52F · Total knee replacement 6 weeks ago · Sitting in wheelchair on arrival · Wants to return to work as school administrator",steps:[{label:"Step 1 of 8",text:"You arrive. Ms Bashayer is sitting in a wheelchair. She looks at you. What is the first thing you do?",options:[{text:"Say: 'Good morning Ms Bashayer — my name is [X]. I am here to take your vital signs and help with your transfer. Is that okay?'",correct:true,feedback:"You introduced yourself, explained your purpose, and asked for consent — all in one sentence. First PC2.3 mark earned.",pc:{21:0,22:0,23:1,24:0}},{text:"Put on your gloves and begin setting up your equipment.",correct:false,feedback:"Gloves come after introduction and hand hygiene. The client does not know who you are yet — introduce yourself first.",pc:{21:0,22:0,23:0,24:0}},{text:"Ask her: 'Are you ready to start?'",correct:false,feedback:"Better than saying nothing, but you must introduce yourself and explain what you are there to do before asking if she is ready.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 2 of 8",text:"Ms Bashayer nods. She is ready. What do you do before you touch anything?",options:[{text:"Wash your hands and say out loud: 'I am going to wash my hands before we start.'",correct:true,feedback:"Hand hygiene is always the first physical step — and saying it out loud means the assessor can mark it. PC2.2.",pc:{21:0,22:1,23:0,24:0}},{text:"Start taking her blood pressure — you can wash your hands after.",correct:false,feedback:"Hand hygiene must happen before any contact with a client. Always. Not after.",pc:{21:0,22:0,23:0,24:0}},{text:"Put on gloves immediately.",correct:false,feedback:"Gloves come after hand hygiene. Wash hands first, then put on gloves.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 3 of 8",text:"You are about to take Ms Bashayer's vital signs. What do you say to her before you start?",options:[{text:"'I am going to take your blood pressure, pulse, breathing rate and temperature now. I will start with your left arm — you will feel the cuff tighten.'",correct:true,feedback:"You explained what you were doing before doing it. PC2.3. Vital signs first = PC2.1.",pc:{21:1,22:0,23:1,24:0}},{text:"Say nothing and apply the blood pressure cuff.",correct:false,feedback:"You must explain what you are doing before touching the client. Silence loses PC2.3 marks.",pc:{21:1,22:0,23:0,24:0}},{text:"Ask her: 'Have you had your blood pressure taken before?'",correct:false,feedback:"Tell her what you are about to do — not what her history might be.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 4 of 8",text:"Vital signs are recorded. You need to transfer Ms Bashayer from the wheelchair to the chair. What do you do first?",options:[{text:"Explain the transfer to her, then lock the wheelchair brakes and position the chair close.",correct:true,feedback:"Explain first (PC2.3), then lock brakes, position chair (PC2.1). Never move a client without explaining first.",pc:{21:1,22:0,23:1,24:0}},{text:"Lock the wheelchair brakes and begin the transfer.",correct:false,feedback:"You have not explained the procedure. She does not know what is about to happen — PC2.3 failure.",pc:{21:0,22:0,23:0,24:0}},{text:"Ask Ms Bashayer to stand up and move to the chair herself.",correct:false,feedback:"She needs support. Explain first, then support her attempt.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 5 of 8",text:"You are supporting Ms Bashayer during the transfer. Which side do you support?",options:[{text:"The right side — her operated knee.",correct:true,feedback:"The right knee is the operated side. Always support the affected side. PC2.1 — correct technique.",pc:{21:1,22:0,23:0,24:0}},{text:"The left side — to let the right knee move freely.",correct:false,feedback:"The operated side needs support, not freedom. Supporting the wrong side risks injury — PC2.1 failure.",pc:{21:0,22:0,23:0,24:0}},{text:"You hold both sides equally to be safe.",correct:false,feedback:"This prevents Ms Bashayer from doing as much as she can herself — PC2.3 issue. Support only the operated (right) side.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 6 of 8",text:"Ms Bashayer is ready to walk with the walking frame. What do you check before she takes a step?",options:[{text:"That the frame handles are level with her hips, then walk slowly alongside her.",correct:true,feedback:"Correct frame height check (PC2.1), correct position — beside her, not behind.",pc:{21:1,22:0,23:1,24:0}},{text:"Ask if she is ready and then let her lead.",correct:false,feedback:"Check the frame height first. An incorrect height can cause a fall.",pc:{21:0,22:0,23:1,24:0}},{text:"Walk in front of her to guide the direction.",correct:false,feedback:"Always walk beside the client — not in front, not behind.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 7 of 8",text:"During the walk Ms Bashayer looks tired but is still moving. What do you say?",options:[{text:"'You are doing really well Ms Bashayer — every step you practise now brings you closer to getting back to your students.'",correct:true,feedback:"You used her name, acknowledged her effort, and linked it to her personal goal. All three earn PC2.3 marks.",pc:{21:0,22:0,23:1,24:0}},{text:"'Almost there — keep going!'",correct:false,feedback:"Encouraging but impersonal. No name, no link to anything meaningful to her.",pc:{21:0,22:0,23:0,24:0}},{text:"Say nothing — she looks like she needs to concentrate.",correct:false,feedback:"Silence loses PC2.3 marks.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 8 of 8",text:"As you finish the walk, Ms Bashayer says: 'My knee feels strange — it didn't feel like that before.' What do you do?",options:[{text:"Stop immediately. Say: 'Let's sit down safely first. I need to report this to my supervisor before we do anything else.'",correct:true,feedback:"Correct PC2.4 response. New symptom not in care plan = stop, secure the client, escalate. PC2.3 maintained by explaining.",pc:{21:0,22:0,23:1,24:1}},{text:"Continue — it is probably just normal post-surgery discomfort.",correct:false,feedback:"A new symptom not in the care plan is a PC2.4 trigger. Stop immediately.",pc:{21:0,22:0,23:0,24:0}},{text:"Ask her to rate her pain out of 10 and decide based on the number.",correct:false,feedback:"Pain scoring is not your role. Any unexplained new symptom = stop and escalate.",pc:{21:0,22:0,23:0,24:0}}]}]},{id:1,name:"Ms Layla",label:"Case 2",sub:"Diabetic foot wound",banner:"52F · Type 2 diabetes, 10-year history · Foot ulcer right heel — recently discharged · Anxious about wound management · Mobile with cane",steps:[{label:"Step 1 of 8",text:"You arrive at Ms Layla's home. She opens the door looking nervous. What is the first thing you say?",options:[{text:"'Hello Ms Layla — my name is [X]. I am here to check your foot and change the dressing. I can see you might be feeling nervous — we will go slowly. Is that okay?'",correct:true,feedback:"You introduced yourself, stated your purpose, acknowledged her anxiety, and asked for consent. Every part earns PC2.3.",pc:{21:0,22:0,23:1,24:0}},{text:"'Hi — shall we get started? I'll need to see your foot.'",correct:false,feedback:"No introduction, no acknowledgement of her visible anxiety. PC2.3 failure from your first moment.",pc:{21:0,22:0,23:0,24:0}},{text:"'Don't worry — this will be quick!'",correct:false,feedback:"This dismisses her anxiety. PC2.3 requires genuine communication, not reassurance shortcuts.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 2 of 8",text:"Ms Layla is sitting. What do you do before touching her foot — and in what order?",options:[{text:"Gather your equipment, wash your hands, then put on gloves.",correct:true,feedback:"Correct sequence: gather → wash → gloves. Every step narrated earns PC2.2.",pc:{21:0,22:1,23:0,24:0}},{text:"Put your gloves on straight away and get started.",correct:false,feedback:"Gloves go on after hand washing — not before. Sequence matters.",pc:{21:0,22:0,23:0,24:0}},{text:"Wash your hands and start looking at the foot without gloves.",correct:false,feedback:"Gloves are required for wound contact. Wash hands first, but gloves go on before examination.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 3 of 8",text:"Before you remove the old dressing, what do you do first?",options:[{text:"Look at the old dressing carefully before touching it — note what you see.",correct:true,feedback:"Always assess before treating. Look for breakthrough bleeding, odour, or infection signs. PC2.1.",pc:{21:1,22:0,23:0,24:0}},{text:"Remove it straight away — the sooner it is off the better.",correct:false,feedback:"Removing without assessing first loses information about wound progress. Always look before you remove.",pc:{21:0,22:0,23:0,24:0}},{text:"Ask Ms Layla how it has been feeling.",correct:false,feedback:"Asking is good for PC2.3, but you also need to visually inspect before removal.",pc:{21:0,22:0,23:1,24:0}}]},{label:"Step 4 of 8",text:"You remove the old dressing. The wound looks the same as described. You apply fresh gauze. What is the next step before removing your gloves?",options:[{text:"Dispose of the old dressing in the waste bag and seal it.",correct:true,feedback:"Dispose of clinical waste immediately and seal the bag before removing gloves. PC2.2.",pc:{21:1,22:1,23:0,24:0}},{text:"Remove your gloves first, then tidy up.",correct:false,feedback:"Used dressings are clinical waste — dispose of them before removing gloves.",pc:{21:0,22:0,23:0,24:0}},{text:"Leave the old dressing on the table and wash your hands.",correct:false,feedback:"Clinical waste goes straight into the sealed bag before anything else.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 5 of 8",text:"You now assess Ms Layla's walking with the cane. Which hand should the cane be in?",options:[{text:"Her left hand — the opposite side to the injured right foot.",correct:true,feedback:"The cane always goes on the opposite side to the injury — it offloads weight from the affected foot. PC2.1.",pc:{21:1,22:0,23:0,24:0}},{text:"Her right hand — so the cane is close to the injury for support.",correct:false,feedback:"Very common error. The cane goes on the OPPOSITE side. On the right it adds weight to the injured foot.",pc:{21:0,22:0,23:0,24:0}},{text:"Whichever hand she finds more comfortable.",correct:false,feedback:"Cane placement is a clinical decision based on anatomy — not patient preference.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 6 of 8",text:"You need to educate Ms Layla about foot care and diet. How do you finish the education session?",options:[{text:"Ask her: 'Can you tell me one thing you are going to do differently at home after today?'",correct:true,feedback:"Checking understanding is part of effective patient education. PC2.3.",pc:{21:1,22:0,23:1,24:0}},{text:"Tell her everything she needs to know and then say goodbye.",correct:false,feedback:"Delivering information without checking understanding is incomplete. PC2.3 requires confirmation.",pc:{21:0,22:0,23:0,24:0}},{text:"Give her a leaflet to read at home.",correct:false,feedback:"A leaflet supports education but does not replace it. Explain and check understanding during the visit.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 7 of 8",text:"Ms Layla says: 'I don't think I can manage this at home on my own.' What do you say?",options:[{text:"'That is completely understandable. Let me walk you through each step clearly so you leave with a plan. And if you are ever unsure, you can call the clinic.'",correct:true,feedback:"You acknowledged her anxiety, offered a clear next step, and gave her a safety net. Strong PC2.3.",pc:{21:0,22:0,23:1,24:0}},{text:"'Don't worry — you'll be fine! It is not as hard as it looks.'",correct:false,feedback:"This dismisses her concern with a false promise. PC2.3 requires genuine acknowledgement.",pc:{21:0,22:0,23:0,24:0}},{text:"Tell her you will arrange for a nurse to come every day.",correct:false,feedback:"You cannot make clinical arrangements beyond your role. Acknowledge and refer to your supervisor.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 8 of 8",text:"You notice Ms Layla's wound looks significantly larger than described in the care plan. What do you do?",options:[{text:"Stop. Say: 'I have noticed the wound looks different from what is in your care plan — I need to speak to my supervisor before I continue.'",correct:true,feedback:"Correct PC2.4 response. Finding not in care plan = stop, notify client, escalate.",pc:{21:0,22:0,23:1,24:1}},{text:"Apply the new dressing anyway — it probably just looks different because of the lighting.",correct:false,feedback:"Any finding that does not match the care plan is a PC2.4 trigger. You cannot rationalise it away.",pc:{21:0,22:0,23:0,24:0}},{text:"Ask Ms Layla if the wound has felt worse lately, then decide.",correct:false,feedback:"Asking is appropriate for PC2.3 but does not replace the PC2.4 action. The visual finding already triggers escalation.",pc:{21:0,22:0,23:0,24:0}}]}]},{id:2,name:"Ms Reem",label:"Case 3",sub:"Elderly post-fall, bed rest",banner:"82F · Fall 2 weeks ago · Bed rest · Weak, moves slowly · Hard of hearing · Dry mouth · Pressure ulcer risk",steps:[{label:"Step 1 of 8",text:"You enter Ms Reem's room. She is in bed, hard of hearing. She turns her head when you come in. What do you do?",options:[{text:"Move to stand facing her directly. Say slowly: 'Good morning Ms Reem.' Pause. 'My name is [X].' Pause. 'I am here to help you today.' Check she understood.",correct:true,feedback:"Face her, short sentences, pauses, check understanding. PC2.3 communication adapted for a hard-of-hearing client.",pc:{21:0,22:0,23:1,24:0}},{text:"Call out from the doorway: 'Hello Ms Reem — I am here to check on you!'",correct:false,feedback:"Calling from a distance is not effective for a hard-of-hearing client. Move close and face her.",pc:{21:0,22:0,23:0,24:0}},{text:"Walk in, introduce yourself quickly, and begin preparing equipment.",correct:false,feedback:"You have not given Ms Reem time to understand what is happening. Slow down and confirm understanding first.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 2 of 8",text:"You take Ms Reem's vital signs. What do you do differently compared to other clients?",options:[{text:"Face her directly, hold up the equipment before using it, and explain each step in short sentences with pauses.",correct:true,feedback:"Adapting communication to the client's needs is core PC2.3. Showing equipment first removes the element of surprise.",pc:{21:1,22:0,23:1,24:0}},{text:"Work quickly and efficiently — the less disturbance the better.",correct:false,feedback:"Speed is not the priority. Ms Reem needs to understand what is happening at every stage.",pc:{21:0,22:0,23:0,24:0}},{text:"Speak loudly and clearly to make sure she hears you.",correct:false,feedback:"Speaking loudly is not the same as speaking clearly. Face her, short sentences, check understanding.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 3 of 8",text:"You are about to perform mouth care for Ms Reem. What do you use and how do you prepare it?",options:[{text:"A soft gauze swab, dampened with water.",correct:true,feedback:"Dampened gauze only — never dry. Dry gauze on a dry mouth is painful. PC2.1 — correct technique.",pc:{21:1,22:1,23:0,24:0}},{text:"A dry gauze swab — it will pick up more debris.",correct:false,feedback:"Dry gauze on a dry mouth is painful and damages tissue. Always dampen first.",pc:{21:0,22:0,23:0,24:0}},{text:"A toothbrush with toothpaste.",correct:false,feedback:"For this care plan, dampened gauze is the specified tool. Substituting without authorisation is a PC2.1 issue.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 4 of 8",text:"You are performing mouth care. In what order do you clean?",options:[{text:"Lips → cheeks → gums → tongue → roof of mouth.",correct:true,feedback:"Correct systematic sequence — outside in, through every surface. PC2.1.",pc:{21:1,22:0,23:0,24:0}},{text:"Wherever seems most needed — look first and then decide.",correct:false,feedback:"Mouth care requires a systematic approach. Always follow the same sequence so nothing is missed.",pc:{21:0,22:0,23:0,24:0}},{text:"Teeth and tongue only.",correct:false,feedback:"Every surface: lips, cheeks, gums, tongue and roof of mouth. Skipping areas is a PC2.1 omission.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 5 of 8",text:"You are doing the head-to-toe pressure check. In what order?",options:[{text:"Ears → shoulders → elbows → sacrum → heels.",correct:true,feedback:"Correct systematic order covering all major pressure points for a bedbound client. PC2.1.",pc:{21:1,22:1,23:0,24:0}},{text:"Start with the sacrum — that is the most common pressure site.",correct:false,feedback:"The check must be head-to-toe. Starting in the middle means you will likely miss areas.",pc:{21:0,22:0,23:0,24:0}},{text:"Check whichever areas the care plan highlights as high-risk.",correct:false,feedback:"All pressure points must be checked — not just those flagged in the care plan.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 6 of 8",text:"You find a red area on Ms Reem's sacrum. You press it gently — it does not go white. What does this mean and what do you do?",options:[{text:"Non-blanchable redness = Stage 1 pressure injury. Document it, do NOT massage it, report to supervisor.",correct:true,feedback:"Correct on all three. Non-blanchable = Stage 1. No massage — outdated and harmful. Report immediately. PC2.1 + PC2.4.",pc:{21:1,22:0,23:0,24:1}},{text:"Massage the area gently to improve circulation.",correct:false,feedback:"Massaging a pressure injury is outdated practice and causes more damage. Never massage.",pc:{21:0,22:0,23:0,24:0}},{text:"Note it in your head and continue — redness is normal after bed rest.",correct:false,feedback:"Non-blanchable redness is a Stage 1 injury. It must be documented and reported. PC2.4 obligation.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 7 of 8",text:"You are repositioning Ms Reem. What angle is recommended and what do you do throughout?",options:[{text:"A 30-degree lateral tilt. Explain before moving. Check comfort at each stage: 'Is that okay? Can we continue?'",correct:true,feedback:"30 degrees is more effective than 90 for pressure relief. Explaining and checking comfort = PC2.3. Correct technique = PC2.1.",pc:{21:1,22:0,23:1,24:0}},{text:"Roll her fully onto her side at 90 degrees — maximum repositioning.",correct:false,feedback:"90 degrees puts more pressure on the hip bone. 30-degree tilt is the recommended position.",pc:{21:0,22:0,23:0,24:0}},{text:"Move her as quickly as possible to minimise disturbance.",correct:false,feedback:"Move slowly. Explain each step. Check comfort throughout.",pc:{21:0,22:0,23:0,24:0}}]},{label:"Step 8 of 8",text:"You speak to Ms Reem after repositioning. She does not respond. You call her name again — still nothing. What do you do?",options:[{text:"Call out immediately: 'I need help right now — Ms Reem is not responding. I need a senior nurse in here immediately.' Stay with her.",correct:true,feedback:"Medical emergency. Immediate, short, urgent. Call for help and stay with the client. PC2.4.",pc:{21:0,22:0,23:0,24:1}},{text:"Say: 'I need to pause here — I have noticed Ms Reem seems unresponsive. I need to check with my supervisor before continuing.'",correct:false,feedback:"This is the correct phrase for a standard PC2.4 situation — not an emergency. An unresponsive client needs immediate urgent help.",pc:{21:0,22:0,23:0,24:0}},{text:"Try to reposition her again and see if movement wakes her.",correct:false,feedback:"An unresponsive client must not be moved further. Call for help immediately.",pc:{21:0,22:0,23:0,24:0}}]}]}];
+
+/* ── STATE ─────────────────────────────────────────────── */
+let studentName='',studentClass='';
+const unlocked=[true,false,false],completed=[false,false,false],scores=[{},{},{}];
+let currentCase=-1,currentStep=0,runScores={21:0,22:0,23:0,24:0},runMax={};
+
+/* ── REGISTER ──────────────────────────────────────────── */
+function register(){
+  const n=document.getElementById('inp-name').value.trim();
+  const c=document.getElementById('inp-class').value;
+  const err=document.getElementById('reg-err');
+  if(!n||!c){err.classList.add('show');return;}
+  err.classList.remove('show');
+  studentName=n;studentClass=c;
+  document.getElementById('chip-name').textContent=n;
+  document.getElementById('chip-class').textContent=c;
+  showScreen('screen-home');renderHome();
+}
+document.getElementById('inp-name').addEventListener('keydown',e=>{if(e.key==='Enter')register();});
+
+/* ── HOME ──────────────────────────────────────────────── */
+function calcMax(c){
+  const m={21:0,22:0,23:0,24:0};
+  CASES[c].steps.forEach(s=>{const co=s.options.find(o=>o.correct);if(co)Object.keys(co.pc).forEach(k=>{m[parseInt(k)]+=co.pc[parseInt(k)];});});
+  return m;
+}
+function calcStars(sc,mx){
+  const t=Object.values(sc).reduce((a,b)=>a+b,0),m=Object.values(mx).reduce((a,b)=>a+b,0);
+  if(!m)return 0;const p=t/m;return p>=0.85?3:p>=0.6?2:1;
+}
+function renderHome(){
+  const grid=document.getElementById('level-grid');grid.innerHTML='';
+  CASES.forEach((c,i)=>{
+    const div=document.createElement('div');
+    div.className='level-card'+(unlocked[i]?'':' locked')+(completed[i]?' completed':'');
+    const stars=completed[i]?calcStars(scores[i],calcMax(i)):0;
+    div.innerHTML=`<div class="level-num">${c.label}</div>${!unlocked[i]?'<div style="font-size:15px;margin-bottom:3px">🔒</div>':''}<div class="level-name">${c.name}</div><div class="level-sub">${c.sub}</div>${completed[i]?`<div class="star-row">${'★'.repeat(stars)+'☆'.repeat(3-stars)}</div>`:''} ${unlocked[i]&&!completed[i]?'<div class="level-cta">Start →</div>':''} ${completed[i]?'<div class="level-cta">Replay →</div>':''}`;
+    if(unlocked[i])div.onclick=()=>startCase(i);
+    grid.appendChild(div);
+  });
+}
+
+/* ── SIMULATION ────────────────────────────────────────── */
+function startCase(i){
+  currentCase=i;currentStep=0;
+  const max=calcMax(i);runScores={21:0,22:0,23:0,24:0};runMax={...max};
+  showScreen('screen-sim');
+  const c=CASES[i];
+  document.getElementById('sim-title').textContent=`${c.label} — ${c.name}`;
+  document.getElementById('sim-sub').textContent=c.sub;
+  ['21','22','23','24'].forEach(pc=>document.getElementById('m'+pc).textContent=max[parseInt(pc)]);
+  updateScores();renderStep();
+}
+function renderStep(){
+  const step=CASES[currentCase].steps[currentStep];
+  document.getElementById('prog-fill').style.width=Math.round(currentStep/CASES[currentCase].steps.length*100)+'%';
+  document.getElementById('step-lbl').textContent=step.label+' of 8';
+  document.getElementById('client-banner').textContent=CASES[currentCase].banner;
+  document.getElementById('scenario-text').textContent=step.text;
+  const opts=document.getElementById('options');opts.innerHTML='';
+  const shuffled=[...step.options].sort(()=>Math.random()-0.5);
+  shuffled.forEach(opt=>{
+    const btn=document.createElement('button');btn.className='opt-btn';
+    btn.textContent=opt.text;btn.onclick=()=>pick(opt,shuffled);opts.appendChild(btn);
+  });
+  document.getElementById('fb-box').className='fb-box';
+  document.getElementById('next-btn').className='next-btn';
+}
+function pick(opt,shuffled){
+  document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+  const correct=shuffled.find(o=>o.correct);
+  document.querySelectorAll('.opt-btn').forEach(b=>{
+    const match=shuffled.find(o=>o.text===b.textContent);
+    if(!match)return;
+    if(match===opt)b.classList.add(match.correct?'correct':'wrong');
+    else if(match.correct&&!opt.correct)b.classList.add('missed');
+  });
+  if(opt.correct){Object.keys(opt.pc).forEach(k=>{runScores[parseInt(k)]+=opt.pc[parseInt(k)];});updateScores();}
+  const ref=opt.correct?opt.pc:correct.pc;
+  const pcs=Object.entries(ref).filter(([k,v])=>v>0).map(([k,v])=>`+${v} PC${k.slice(0,2)}.${k.slice(2)}`).join(' · ');
+  const fb=document.getElementById('fb-box');
+  fb.className='fb-box show '+(opt.correct?'good':'bad');
+  fb.innerHTML=`${opt.feedback}${pcs?`<div class="fb-pc">${opt.correct?pcs:'Missed: '+pcs}</div>`:''}`;
+  document.getElementById('next-btn').className='next-btn show';
+}
+function updateScores(){[21,22,23,24].forEach(pc=>document.getElementById('s'+pc).textContent=runScores[pc]);}
+function nextStep(){currentStep++;if(currentStep>=CASES[currentCase].steps.length)endCase();else renderStep();}
+
+/* ── RESULT + SHEET ────────────────────────────────────── */
+function endCase(){
+  scores[currentCase]={...runScores};completed[currentCase]=true;
+  if(currentCase<2)unlocked[currentCase+1]=true;
+  showScreen('screen-result');
+  const max=calcMax(currentCase),stars=calcStars(runScores,max);
+  document.getElementById('res-title').textContent=CASES[currentCase].name+' — complete';
+  document.getElementById('star-big').textContent='★'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('res-msg').textContent=['Some marks were missed — review the feedback and replay.','Good work — you are building the right instincts. Replay to push for full marks.','Strong performance. You are well prepared for this case.'][stars-1];
+  const grid=document.getElementById('result-grid');grid.innerHTML='';
+  [21,22,23,24].forEach(pc=>{
+    const s=runScores[pc],m=max[pc],cls=s===m?'full':s>0?'partial':'poor';
+    const d=document.createElement('div');d.className=`rpc ${cls}`;
+    d.innerHTML=`<div class="rpc-lbl">PC2.${pc-20}</div><div class="rpc-val">${s}</div><div class="rpc-max">/ ${m}</div>`;
+    grid.appendChild(d);
+  });
+  const ar=document.getElementById('action-row');ar.innerHTML='';
+  const rb=document.createElement('button');rb.className='act-btn';rb.textContent='Replay';rb.onclick=()=>startCase(currentCase);ar.appendChild(rb);
+  if(currentCase<2){const nb=document.createElement('button');nb.className='act-btn primary';nb.textContent='Next case →';nb.onclick=()=>startCase(currentCase+1);ar.appendChild(nb);}
+  const hb=document.createElement('button');hb.className='act-btn';hb.textContent='Case select';hb.onclick=goHome;ar.appendChild(hb);
+  postToSheet(stars,max);
+}
+function postToSheet(stars,max){
+  const status=document.getElementById('save-status');
+  status.textContent='Saving results…';status.className='save-status';
+  if(false){
+    status.textContent='Sheet not configured — results not saved.';status.className='save-status err';return;
+  }
+  const payload={
+    timestamp:new Date().toISOString(),
+    name:studentName,class:studentClass,
+    case:CASES[currentCase].label,caseName:CASES[currentCase].name,
+    pc21:runScores[21],pc21max:max[21],
+    pc22:runScores[22],pc22max:max[22],
+    pc23:runScores[23],pc23max:max[23],
+    pc24:runScores[24],pc24max:max[24],
+    stars:stars,
+    total:Object.values(runScores).reduce((a,b)=>a+b,0),
+    totalMax:Object.values(max).reduce((a,b)=>a+b,0)
+  };
+  fetch(SHEET_URL,{method:'POST',body:JSON.stringify(payload)})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.success){status.textContent='Results saved.';status.className='save-status ok';}
+      else{status.textContent='Could not save — check sheet URL.';status.className='save-status err';}
+    })
+    .catch(()=>{status.textContent='Could not connect to sheet.';status.className='save-status err';});
+}
+function goHome(){showScreen('screen-home');renderHome();}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+</script>
+</body>
+</html>
